@@ -1,0 +1,50 @@
+version: "3.8"
+services:
+  api1: &api1 # API - Instância 01
+    image: api
+    hostname: api1
+    depends_on:
+      - db
+    expose:
+      - "80"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: "0.5GB"
+
+  api2: # API - Instância 02
+    <<: *api1
+    hostname: api2
+
+  nginx: # Load Balancer
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api1
+      - api2
+    ports:
+      - "9999:9999"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: "0.5GB"
+
+  db: # Banco de dados
+    image: postgres
+    deploy:
+      resources:
+        limits:
+          cpus: "0.75"
+          memory: "1.5GB"
+    env_file:
+      - ./.env
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_DB: ${DB_DATABASE}
+    ports:
+      - "5432:5432"
+    container_name: ${DB_DATABASE}-db
